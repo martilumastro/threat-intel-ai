@@ -71,6 +71,34 @@ Its confidence and reasoning should be reviewed by a human analyst.
 - Ollama running locally for manual pipeline runs
 - The configured local model (default: `qwen3.5:9b`)
 
+### Windows / WSL2 users
+
+WSL2 limits itself to roughly 50% of total system RAM by default, which
+is often not enough to run a 9B parameter model on CPU without the
+Ollama process crashing mid-request. If you're on Windows, increase the
+memory available to WSL2 before installing Ollama.
+
+Create or edit `C:\Users\<your-username>\.wslconfig` on the Windows side:
+
+```ini
+[wsl2]
+memory=12GB
+processors=4
+```
+
+Adjust `memory` based on your total RAM, leaving a few GB free for
+Windows itself. Restart WSL from PowerShell for the change to take
+effect:
+
+```bash
+wsl --shutdown
+```
+
+Then reopen your WSL terminal and verify with `free -h`. If inference
+fails with a connection/timeout error, this is the first thing to check.
+
+### Environment setup
+
 Create and activate a virtual environment, then install the project and its
 development dependencies:
 
@@ -79,6 +107,8 @@ python -m venv venv
 source venv/bin/activate
 pip install -e ".[dev]"
 ```
+
+### Configuration
 
 The default Ollama configuration can be overridden without editing source code:
 
