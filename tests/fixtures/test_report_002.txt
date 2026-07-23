@@ -1,0 +1,4 @@
+During the incident detected last week, firewall logs show
+suspicious traffic toward the IP 185.220.101.45, the same
+address already flagged in other contexts. The traffic also
+included connections to 91.219.237.16, not yet classified.

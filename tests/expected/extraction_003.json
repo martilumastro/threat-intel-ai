@@ -1,0 +1,8 @@
+{
+  "ip": [],
+  "domains": [],
+  "hashes": [],
+  "emails": [],
+  "mitre_ttps": ["T1566"],
+  "actors_mentioned": ["Cozy Bear"]
+}

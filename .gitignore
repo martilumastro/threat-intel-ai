@@ -1,0 +1,16 @@
+# Python bytecode and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Local virtual environments and configuration
+venv/
+.venv/
+.env
+
+# Regenerable pipeline output (fixtures live under tests/ instead)
+/data/extracted/*
+!/data/extracted/.gitkeep
+/data/correlated/*
+!/data/correlated/.gitkeep

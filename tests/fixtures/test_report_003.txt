@@ -1,0 +1,4 @@
+Cozy Bear conducted a targeted phishing campaign against
+government organizations, using emails with malicious attachments
+to gain initial access. The technique follows the classic
+spear-phishing pattern already documented for this actor (T1566).

@@ -1,0 +1,4 @@
+The APT29 group used the IP 185.220.101.45 for C2 communications.
+The domain malicious-update[.]net was also observed, along with the
+SHA256 hash e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.
+The main technique observed was spear-phishing (T1566).
