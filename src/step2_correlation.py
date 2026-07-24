@@ -33,6 +33,12 @@ seem to describe the same campaign, the same actor, or related threats,
 even if they don't share identical IOCs (e.g. different names for the
 same group, similar TTPs described in different words).
 
+A single common or generic technique (e.g. T1059, T1071, T1105) shared
+between two documents is NOT sufficient evidence of a connection on its
+own. Only mark documents as related if there is a specific, non-generic
+pattern match (matching actor names/aliases, a distinctive combination
+of multiple TTPs, or other specific shared evidence).
+
 Respond ONLY with a JSON object in this format:
 {{
   "related": true/false,
@@ -167,7 +173,14 @@ def evaluate_semantic_correlation(doc_a: dict, doc_b: dict) -> dict:
 
     response = requests.post(
         OLLAMA_URL,
-        json={"model": MODEL, "prompt": prompt, "stream": False, "format": "json", "think": False},
+        json={
+            "model": MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json",
+            "think": False,
+            "options": {"temperature": 0},
+        },
         timeout=REQUEST_TIMEOUT,
     )
     response.raise_for_status()
@@ -182,8 +195,8 @@ def evaluate_semantic_correlation(doc_a: dict, doc_b: dict) -> dict:
             raise TypeError("missing reasoning")
         return result
     except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
+        print(f"    RAW RESPONSE ON FAILURE: {response.json()['response']!r}")
         return {"related": False, "confidence": "low", "reasoning": f"invalid model response: {error}"}
-
 
 def is_semantic_candidate(doc_a: dict, doc_b: dict) -> bool:
     """Avoid LLM calls for pairs with no structured evidence to compare."""

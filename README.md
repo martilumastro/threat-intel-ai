@@ -36,6 +36,9 @@ tests/
   fixtures/                    Three simulated threat reports
   expected/                    Expected structured extraction results
   test_*.py                    Automated tests that do not require Ollama
+benchmark/
+  benchmark_cases.py           Hand-labeled document pairs with expected correlation outcome
+  run_benchmark.py             Runs the configured model against the benchmark cases
 knowledge/
   actor_aliases.json           Versioned catalogue of known threat-actor aliases
 data/
@@ -71,6 +74,12 @@ All evidence types are written separately to `data/correlated/correlations.json`
 
 The semantic result is an analyst aid, not an automatic attribution decision.
 Its confidence and reasoning should be reviewed by a human analyst.
+
+To keep results reproducible, both Ollama requests (extraction and
+correlation) are made with `temperature: 0`. The correlation prompt also
+enforces an explicit evidence threshold: a single generic or very common
+technique shared between two documents (e.g. `T1059`, `T1071`) is not
+treated as sufficient evidence of a relationship on its own.
 
 ## Requirements and installation
 
@@ -168,3 +177,22 @@ The planned Step 0 will start with clearweb OSINT sources. Any future work
 involving dark-web observation should be treated as a separate, legally and
 operationally reviewed component, with isolation and strictly controlled data
 transfer. This repository does not implement that capability.
+
+## Correlation benchmark
+
+Unlike the automated tests, the benchmark suite calls the real, configured
+model and measures how well it performs on semantic correlation specifically
+— the one part of the pipeline that is not deterministic. Each case is a pair
+of already-extracted records with a manually decided expected outcome,
+deliberately built to bypass the exact-match and actor-alias layers, so it
+isolates the model's own reasoning.
+
+```bash
+python benchmark/run_benchmark.py
+```
+
+The summary reports accuracy, false positives, and false negatives
+separately, since in a threat intelligence context an incorrect "related"
+verdict (false positive) is generally more costly than a missed one. This
+suite is intended to compare models before adopting a different one for the
+correlation step, rather than to gate every commit.

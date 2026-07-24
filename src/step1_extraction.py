@@ -61,6 +61,7 @@ def extract_ioc(text: str) -> dict:
             "stream": False,
             "format": "json",
             "think": False,
+            "options": {"temperature": 0},
         },
         timeout=REQUEST_TIMEOUT,
     )

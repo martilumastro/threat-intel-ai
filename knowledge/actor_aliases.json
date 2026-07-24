@@ -72,5 +72,31 @@
         "Kryptonite Panda",
         "Bronze Mohawk",
         "Gingham Typhoon"
+    ],
+    "Wizard Spider": [
+        "TrickBot operators",
+        "TrickBot Group",
+        "Grim Spider",
+        "UNC1878",
+        "ITG23"
+    ],
+    "Evil Corp": [
+        "Indrik Spider",
+        "DEV-0243",
+        "Dridex Group"
+    ],
+    "Conti": [
+        "Wizard Spider (Conti)",
+        "Gold Ulrick",
+        "TrickBot ransomware arm"
+    ],
+    "REvil": [
+        "Sodinokibi",
+        "Gold Southfield",
+        "PINCHY SPIDER"
+    ],
+    "BlackCat": [
+        "ALPHV",
+        "Noberus"
     ]
 }
