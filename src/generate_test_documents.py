@@ -10,10 +10,10 @@ Run this script to populate data/extracted/, then run
 step2_correlation.py to see the correlation in action.
 """
 
-from common import PROJECT_DIR
-from step1_extraction import extract_ioc, save_result
 import requests
 
+from common import PROJECT_DIR
+from step1_extraction import extract_ioc, save_result
 
 FIXTURE_DIR = PROJECT_DIR / "tests" / "fixtures"
 

@@ -8,7 +8,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_DIR / "data"
 EXTRACTED_DIR = DATA_DIR / "extracted"
@@ -27,7 +26,7 @@ TTP_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$")
 
 def _string_list(value: Any, category: str) -> list[str]:
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
-        raise ValueError(f"'{category}' must be a list of strings")
+        raise TypeError(f"'{category}' must be a list of strings")
     return value
 
 
@@ -38,11 +37,11 @@ def _unique(values: list[str]) -> list[str]:
 def normalize_extraction(data: Any) -> dict[str, list[str]]:
     """Validate the LLM schema and return canonical, deduplicated IOC values."""
     if not isinstance(data, dict):
-        raise ValueError("extraction result must be a JSON object")
+        raise TypeError("extraction result must be a JSON object")
 
     unknown = set(data) - set(IOC_CATEGORIES)
     if unknown:
-        raise ValueError(f"unexpected extraction fields: {', '.join(sorted(unknown))}")
+        raise TypeError(f"unexpected extraction fields: {', '.join(sorted(unknown))}")
 
     result: dict[str, list[str]] = {category: [] for category in IOC_CATEGORIES}
     for raw in _string_list(data.get("ip", []), "ip"):
@@ -83,10 +82,10 @@ def normalize_extraction(data: Any) -> dict[str, list[str]]:
 def safe_document_name(name: str) -> str:
     """Create a filename-safe document identifier without accepting a path."""
     if not isinstance(name, str):
-        raise ValueError("document name must be a string")
+        raise TypeError("document name must be a string")
     normalized = re.sub(r"[^A-Za-z0-9._-]+", "_", name).strip("._-")
     if not normalized:
-        raise ValueError("document name has no usable characters")
+        raise TypeError("document name has no usable characters")
     return normalized[:120]
 
 

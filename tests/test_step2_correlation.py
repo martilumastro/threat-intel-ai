@@ -1,7 +1,8 @@
 import json
-import step2_correlation
 
+import step2_correlation
 from actor_aliases import load_actor_aliases
+
 
 def _document(name, data):
     return {"source_document": name, "status": "extracted", "data": data}

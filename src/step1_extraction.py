@@ -8,10 +8,10 @@ The result is saved to data/extracted/ as a JSON file, ready to be
 read by the next module (correlation).
 """
 
-import requests
 import json
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
+
+import requests
 
 from common import (
     EXTRACTED_DIR,
@@ -84,7 +84,7 @@ def save_result(document_name: str, extracted_data: dict) -> str:
 
     record = {
         "source_document": document_name,
-        "extraction_timestamp": datetime.now(timezone.utc).isoformat(),
+        "extraction_timestamp": datetime.now(UTC).isoformat(),
         "status": "extracted",
         "data": extracted_data,
     }

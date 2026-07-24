@@ -24,7 +24,7 @@ def test_normalize_extraction_canonicalizes_and_deduplicates():
 
 
 def test_normalize_extraction_rejects_a_wrong_schema():
-    with pytest.raises(ValueError, match="list of strings"):
+    with pytest.raises(TypeError, match="list of strings"):
         normalize_extraction({"ip": "185.220.101.45"})
 
 

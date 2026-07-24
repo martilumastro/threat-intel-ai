@@ -10,12 +10,13 @@ The result is saved with status "correlated", ready for Step 3
 (reporting), to be written later.
 """
 
-import requests
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from itertools import combinations
-from actor_aliases import canonical_actor_name, load_actor_aliases
 
+import requests
+
+from actor_aliases import canonical_actor_name, load_actor_aliases
 from common import (
     CORRELATED_DIR,
     EXTRACTED_DIR,
@@ -174,11 +175,11 @@ def evaluate_semantic_correlation(doc_a: dict, doc_b: dict) -> dict:
     try:
         result = json.loads(response.json()["response"])
         if not isinstance(result, dict) or not isinstance(result.get("related"), bool):
-            raise ValueError("missing boolean 'related'")
+            raise TypeError("missing boolean 'related'")
         if result.get("confidence") not in {"low", "medium", "high"}:
-            raise ValueError("invalid confidence")
+            raise TypeError("invalid confidence")
         if not isinstance(result.get("reasoning"), str):
-            raise ValueError("missing reasoning")
+            raise TypeError("missing reasoning")
         return result
     except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
         return {"related": False, "confidence": "low", "reasoning": f"invalid model response: {error}"}
@@ -200,7 +201,7 @@ def save_correlations(
 ) -> str:
     """Saves all correlation results into a single JSON file."""
     record = {
-        "correlation_timestamp": datetime.now(timezone.utc).isoformat(),
+        "correlation_timestamp": datetime.now(UTC).isoformat(),
         "status": "correlated",
         "exact_matches": exact_matches,
         "known_actor_alias_matches": known_actor_alias_matches,
