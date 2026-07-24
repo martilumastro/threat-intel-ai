@@ -1,0 +1,40 @@
+{
+  "summary": {
+    "overall_threat_level": "CRITICAL",
+    "total_exact_matches": 1,
+    "total_actor_alias_matches": 1,
+    "total_semantic_matches": 0
+  },
+  "details": {
+    "correlation_timestamp": "2026-07-24T13:48:57.215569+00:00",
+    "status": "correlated",
+    "exact_matches": [
+      {
+        "document_a": "test_report_001",
+        "document_b": "test_report_002",
+        "match_type": "exact",
+        "category": "ip",
+        "shared_values": [
+          "185.220.101.45"
+        ]
+      }
+    ],
+    "known_actor_alias_matches": [
+      {
+        "document_a": "test_report_001",
+        "document_b": "test_report_003",
+        "match_type": "known_actor_alias",
+        "canonical_actors": [
+          "APT29"
+        ],
+        "actor_names_a": [
+          "APT29"
+        ],
+        "actor_names_b": [
+          "Cozy Bear"
+        ]
+      }
+    ],
+    "semantic_matches": []
+  }
+}
