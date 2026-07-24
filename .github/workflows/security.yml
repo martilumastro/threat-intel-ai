@@ -1,4 +1,4 @@
-name: Security Checks
+name: Security & Quality Checks
 
 on:
   push:
@@ -19,14 +19,23 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Installa dipendenze e strumenti di sicurezza
+      - name: Install project and tools
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install bandit pip-audit
+          pip install bandit pip-audit ruff detect-secrets pytest
+          pip install -e .
 
-      - name: Esegui Bandit (Analisi statica del codice)
-        run: bandit -r . -x ./tests
+      - name: 1. Run Ruff (Code quality and syntax)
+        run: ruff check .
 
-      - name: Esegui pip-audit (Controllo vulnerabilità librerie)
+      - name: 2. Run Unit Tests
+        run: pytest
+
+      - name: 3. Run Bandit (Static Application Security Testing - SAST)
+        run: bandit -r src/
+
+      - name: 4. Run pip-audit (Dependency vulnerability scan)
         run: pip-audit
+
+      - name: 5. Check for exposed secrets
+        run: detect-secrets scan
