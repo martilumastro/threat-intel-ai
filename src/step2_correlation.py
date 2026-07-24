@@ -33,12 +33,6 @@ seem to describe the same campaign, the same actor, or related threats,
 even if they don't share identical IOCs (e.g. different names for the
 same group, similar TTPs described in different words).
 
-A single common or generic technique (e.g. T1059, T1071, T1105) shared
-between two documents is NOT sufficient evidence of a connection on its
-own. Only mark documents as related if there is a specific, non-generic
-pattern match (matching actor names/aliases, a distinctive combination
-of multiple TTPs, or other specific shared evidence).
-
 Respond ONLY with a JSON object in this format:
 {{
   "related": true/false,

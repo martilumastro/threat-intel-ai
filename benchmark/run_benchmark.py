@@ -21,10 +21,10 @@ from pathlib import Path
 SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(SRC_DIR))
 
+from benchmark_cases import BENCHMARK_CASES
+
 from common import MODEL
 from step2_correlation import evaluate_semantic_correlation
-
-from benchmark_cases import BENCHMARK_CASES
 
 
 def run_case(case: dict) -> dict:
