@@ -23,6 +23,7 @@ EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 HASH_RE = re.compile(r"^(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64}|[a-f0-9]{128})$")
 TTP_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$")
 
+GENERIC_TTPS = {"T1059", "T1071", "T1105", "T1041"} 
 
 def _string_list(value: Any, category: str) -> list[str]:
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):

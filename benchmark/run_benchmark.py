@@ -29,13 +29,41 @@ from step2_correlation import evaluate_semantic_correlation
 
 def run_case(case: dict) -> dict:
     """Runs a single benchmark case and returns a result record."""
-    start = time.monotonic()
-    evaluation = evaluate_semantic_correlation(case["doc_a"], case["doc_b"])
-    elapsed = time.monotonic() - start
-
-    predicted_related = evaluation.get("related", False)
+    
+    # --- STEP 1: Check for a deterministic alias match. ---
+    from actor_aliases import canonical_actor_name, load_actor_aliases
+    aliases = load_actor_aliases()
+    
+    actors_a = case["doc_a"]["data"].get("actors_mentioned", [])
+    actors_b = case["doc_b"]["data"].get("actors_mentioned", [])
+    
+    canonical_a = {canonical_actor_name(a, aliases) for a in actors_a}
+    canonical_b = {canonical_actor_name(a, aliases) for a in actors_b}
+    
+    known_canonical = set(aliases.keys())
+    shared_actors = (canonical_a & canonical_b) & known_canonical
+    
+    # Initialize elapsed with a default value
+    elapsed = 0.0
+    
+    if shared_actors:
+        # If there is an alias match, it is determined.
+        predicted_related = True
+        reasoning = f"Alias match: {', '.join(shared_actors)}"
+        confidence = "high"
+        # elapsed rimane 0.0
+    else:
+        # --- STEP 2: Otherwise, use the LLM ---
+        start = time.monotonic()
+        evaluation = evaluate_semantic_correlation(case["doc_a"], case["doc_b"])
+        elapsed = time.monotonic() - start
+        
+        predicted_related = evaluation.get("related", False)
+        reasoning = evaluation.get("reasoning", "")
+        confidence = evaluation.get("confidence", "?")
+    
     expected_related = case["expected_related"]
-
+    
     if predicted_related == expected_related:
         outcome = "correct"
     elif predicted_related and not expected_related:
@@ -49,11 +77,10 @@ def run_case(case: dict) -> dict:
         "expected_related": expected_related,
         "predicted_related": predicted_related,
         "outcome": outcome,
-        "confidence": evaluation.get("confidence", "?"),
-        "reasoning": evaluation.get("reasoning", ""),
+        "confidence": confidence,
+        "reasoning": reasoning,
         "elapsed_seconds": round(elapsed, 1),
     }
-
 
 def print_summary(results: list[dict]) -> None:
     total = len(results)
