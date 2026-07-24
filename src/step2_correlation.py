@@ -14,6 +14,7 @@ import requests
 import json
 from datetime import datetime, timezone
 from itertools import combinations
+from actor_aliases import canonical_actor_name, load_actor_aliases
 
 from common import (
     CORRELATED_DIR,
@@ -97,6 +98,56 @@ def find_exact_matches(documents: list[dict]) -> list[dict]:
 
     return matches_found
 
+def find_known_actor_alias_matches(
+    documents: list[dict], aliases: dict[str, list[str]]
+) -> list[dict]:
+    """Find document pairs that mention different known aliases of one actor."""
+    matches_found = []
+    known_canonical_names = set(aliases)
+
+    for doc_a, doc_b in combinations(documents, 2):
+        actors_a = doc_a["data"].get("actors_mentioned", [])
+        actors_b = doc_b["data"].get("actors_mentioned", [])
+
+        canonical_a = {
+            canonical_actor_name(actor, aliases)
+            for actor in actors_a
+        }
+        canonical_b = {
+            canonical_actor_name(actor, aliases)
+            for actor in actors_b
+        }
+
+        shared_actors = sorted(
+            (canonical_a & canonical_b) & known_canonical_names
+        )
+
+        if not shared_actors:
+            continue
+
+        actor_names_a = [
+            actor
+            for actor in actors_a
+            if canonical_actor_name(actor, aliases) in shared_actors
+        ]
+        actor_names_b = [
+            actor
+            for actor in actors_b
+            if canonical_actor_name(actor, aliases) in shared_actors
+        ]
+
+        matches_found.append(
+            {
+                "document_a": doc_a["source_document"],
+                "document_b": doc_b["source_document"],
+                "match_type": "known_actor_alias",
+                "canonical_actors": shared_actors,
+                "actor_names_a": actor_names_a,
+                "actor_names_b": actor_names_b,
+            }
+        )
+
+    return matches_found
 
 def evaluate_semantic_correlation(doc_a: dict, doc_b: dict) -> dict:
     """Asks the AI model whether two documents seem related, without identical IOCs."""
@@ -142,12 +193,17 @@ def is_semantic_candidate(doc_a: dict, doc_b: dict) -> bool:
     )
 
 
-def save_correlations(exact_matches: list[dict], semantic_matches: list[dict]) -> str:
+def save_correlations(
+    exact_matches: list[dict],
+    known_actor_alias_matches: list[dict],
+    semantic_matches: list[dict],
+) -> str:
     """Saves all correlation results into a single JSON file."""
     record = {
         "correlation_timestamp": datetime.now(timezone.utc).isoformat(),
         "status": "correlated",
         "exact_matches": exact_matches,
+        "known_actor_alias_matches": known_actor_alias_matches,
         "semantic_matches": semantic_matches,
     }
 
@@ -168,9 +224,17 @@ if __name__ == "__main__":
         exact_matches = find_exact_matches(documents)
         print(f"Found {len(exact_matches)} exact matches.")
 
-        # Semantic correlation only on pairs WITHOUT an exact match,
-        # to avoid wasting AI calls where a direct match already exists
-        pairs_with_match = {(m["document_a"], m["document_b"]) for m in exact_matches}
+        print("\nLooking for known actor aliases (no AI)...")
+        aliases = load_actor_aliases()
+        known_actor_alias_matches = find_known_actor_alias_matches(documents, aliases)
+        print(f"Found {len(known_actor_alias_matches)} known actor alias matches.")
+
+        # Semantic correlation only on pairs without deterministic evidence.
+        deterministic_matches = exact_matches + known_actor_alias_matches
+        pairs_with_match = {
+            (match["document_a"], match["document_b"])
+            for match in deterministic_matches
+        }
         semantic_matches = []
 
         print("\nEvaluating semantic correlation on remaining pairs...")
@@ -193,5 +257,9 @@ if __name__ == "__main__":
 
         print(f"Found {len(semantic_matches)} semantic matches.")
 
-        path = save_correlations(exact_matches, semantic_matches)
+        path = save_correlations(
+            exact_matches,
+            known_actor_alias_matches,
+            semantic_matches,
+        )
         print(f"\nSaved to: {path}")

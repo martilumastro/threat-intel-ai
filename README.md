@@ -27,6 +27,7 @@ be executed independently.
 
 ```text
 src/
+  actor_aliases.py             Known actor-alias catalogue loading and resolution
   common.py                    Shared configuration, validation, normalisation and JSON helpers
   step1_extraction.py          Step 1: extract IOCs, TTPs and actors through Ollama
   step2_correlation.py         Step 2: exact and semantic correlation
@@ -35,6 +36,8 @@ tests/
   fixtures/                    Three simulated threat reports
   expected/                    Expected structured extraction results
   test_*.py                    Automated tests that do not require Ollama
+knowledge/
+  actor_aliases.json           Versioned catalogue of known threat-actor aliases
 data/
   extracted/                   Locally generated Step 1 output
   correlated/                  Locally generated Step 2 output
@@ -57,10 +60,14 @@ the next stage.
 ### Step 2: correlation
 
 `step2_correlation.py` reads valid extraction records and first searches for
-exact IOC matches using Python. It then asks the LLM to assess only candidate
-pairs with structured evidence to compare, such as a shared TTP or actors
-mentioned in both records. Exact and semantic matches are written separately to
-`data/correlated/correlations.json`.
+exact IOC matches using Python. It then resolves known actor aliases from the
+versioned local catalogue; for example, `APT29`, `Cozy Bear`, and `NOBELIUM`
+resolve to the canonical name `APT29`. These deterministic matches are kept
+separate from exact IOC and semantic LLM matches.
+
+The LLM is asked to assess only remaining candidate pairs with structured
+evidence to compare, such as a shared TTP or actors mentioned in both records.
+All evidence types are written separately to `data/correlated/correlations.json`.
 
 The semantic result is an analyst aid, not an automatic attribution decision.
 Its confidence and reasoning should be reviewed by a human analyst.
@@ -148,11 +155,12 @@ selection, and graceful handling of corrupted extraction files.
 
 ## Versioned and local data
 
-The simulated input reports and expected outputs under `tests/` are versioned:
-they are part of the reproducible test suite. In contrast, `data/extracted/`
-and `data/correlated/` contain regenerable local output and are ignored by Git.
-This prevents routine runs, potentially sensitive collected data, and noisy
-result changes from being committed accidentally.
+The simulated input reports and expected outputs under `tests/`, as well as the
+curated actor-alias catalogue under `knowledge/`, are versioned: they are part
+of the reproducible test suite and correlation logic. In contrast,
+`data/extracted/` and `data/correlated/` contain regenerable local output and
+are ignored by Git. This prevents routine runs, potentially sensitive collected
+data, and noisy result changes from being committed accidentally.
 
 ## Security scope
 

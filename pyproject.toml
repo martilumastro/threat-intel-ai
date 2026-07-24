@@ -18,7 +18,13 @@ dev = [
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["common", "step1_extraction", "step2_correlation", "generate_test_documents"]
+py-modules = [
+    "actor_aliases",
+    "common",
+    "step1_extraction",
+    "step2_correlation",
+    "generate_test_documents",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
