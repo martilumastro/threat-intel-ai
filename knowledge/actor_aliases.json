@@ -2,11 +2,75 @@
     "APT29": [
         "Cozy Bear",
         "NOBELIUM",
-        "The Dukes"
+        "The Dukes",
+        "Midnight Blizzard",
+        "Yttrium"
     ],
     "APT28": [
         "Fancy Bear",
         "Sofacy",
-        "Forest Blizzard"
+        "Forest Blizzard",
+        "STRONTIUM",
+        "Sednit",
+        "Pawn Storm"
+    ],
+    "APT1": [
+        "Comment Crew",
+        "Comment Panda",
+        "PLA Unit 61398"
+    ],
+    "APT41": [
+        "Wicked Panda",
+        "Double Dragon",
+        "Barium",
+        "Winnti Group"
+    ],
+    "Lazarus Group": [
+        "Hidden Cobra",
+        "Guardians of Peace",
+        "ZINC",
+        "Diamond Sleet",
+        "APT38"
+    ],
+    "Sandworm": [
+        "Voodoo Bear",
+        "Iron Viking",
+        "Telebots",
+        "Seashell Blizzard",
+        "APT44"
+    ],
+    "APT33": [
+        "Elfin",
+        "Refined Kitten",
+        "Peach Sandstorm"
+    ],
+    "APT34": [
+        "OilRig",
+        "Helix Kitten",
+        "Cobalt Gypsy",
+        "Crambus"
+    ],
+    "MuddyWater": [
+        "Static Kitten",
+        "Seedworm",
+        "Mercury",
+        "TEMP.Zagros"
+    ],
+    "FIN7": [
+        "Carbanak Group",
+        "Navigator Group",
+        "Sangria Tempest"
+    ],
+    "APT10": [
+        "Stone Panda",
+        "MenuPass",
+        "Red Apollo",
+        "POTASSIUM"
+    ],
+    "APT40": [
+        "Leviathan",
+        "Kryptonite Panda",
+        "Bronze Mohawk",
+        "Gingham Typhoon"
     ]
 }
