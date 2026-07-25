@@ -15,6 +15,7 @@ Usage:
 
 import argparse
 import sys
+from itertools import combinations
 from pathlib import Path
 
 import requests
@@ -22,6 +23,7 @@ import requests
 from common import CORRELATED_DIR, DATA_DIR, EXTRACTED_DIR, MODEL, OLLAMA_URL
 from step1_extraction import extract_ioc, save_result
 from step2_correlation import (
+    evaluate_semantic_correlation,
     find_exact_matches,
     find_known_actor_alias_matches,
     is_semantic_candidate,
@@ -29,9 +31,7 @@ from step2_correlation import (
     load_extracted_documents,
     save_correlations,
 )
-from step2_correlation import evaluate_semantic_correlation
 from step3_report import run_step3
-from itertools import combinations
 
 FINAL_REPORTS_DIR = DATA_DIR / "final_reports"
 
