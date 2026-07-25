@@ -1,24 +1,44 @@
 """Known threat-actor alias handling."""
 
-import json
+import sqlite3
 
 from common import PROJECT_DIR
 
-ALIASES_PATH = PROJECT_DIR / "knowledge" / "actor_aliases.json"
+DB_PATH = PROJECT_DIR / "knowledge" / "threat_intel.db"
 
 
 def load_actor_aliases() -> dict[str, list[str]]:
-    """Load and validate the local actor-alias catalogue."""
-    try:
-        with ALIASES_PATH.open("r", encoding="utf-8") as file_handle:
-            aliases = json.load(file_handle)
-    except FileNotFoundError as error:
-        raise TypeError(f"Alias catalogue not found: {ALIASES_PATH}") from error
-    except json.JSONDecodeError as error:
-        raise TypeError(f"Alias catalogue is not valid JSON: {error}") from error
+    """Load and validate the local actor-alias catalogue from the database.
 
-    if not isinstance(aliases, dict):
-        raise TypeError("Alias catalogue must be a JSON object.")
+    Returns the same shape the JSON-based version used to return:
+    {"APT29": ["Cozy Bear", "NOBELIUM", ...], ...}
+    """
+    if not DB_PATH.exists():
+        raise TypeError(
+            f"Knowledge database not found: {DB_PATH}. Run knowledge/init_db.py first."
+        )
+
+    try:
+        connection = sqlite3.connect(DB_PATH)
+    except sqlite3.Error as error:
+        raise TypeError(f"Could not open knowledge database: {error}") from error
+
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT id, canonical_name FROM actors")
+        actors = cursor.fetchall()
+
+        aliases: dict[str, list[str]] = {}
+        for actor_id, canonical_name in actors:
+            cursor.execute(
+                "SELECT alias FROM actor_aliases WHERE actor_id = ? ORDER BY alias",
+                (actor_id,),
+            )
+            aliases[canonical_name] = [row[0] for row in cursor.fetchall()]
+    except sqlite3.Error as error:
+        raise TypeError(f"Failed to read alias catalogue from database: {error}") from error
+    finally:
+        connection.close()
 
     for canonical_name, known_aliases in aliases.items():
         if not isinstance(canonical_name, str):
