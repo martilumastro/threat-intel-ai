@@ -4,9 +4,44 @@ import json
 from pathlib import Path
 from typing import Any
 
+from common import CORRELATED_DIR, DATA_DIR, atomic_write_json, get_knowledge_db
+
+FINAL_REPORTS_DIR = DATA_DIR / "final_reports"
+
+
+def enrich_actor_info(canonical_name: str) -> dict | None:
+    """Recupera informazioni aggiuntive su un attore dal database."""
+    with get_knowledge_db() as conn:
+        cursor = conn.execute("""
+            SELECT 
+                a.country,
+                a.motivation,
+                a.notes,
+                GROUP_CONCAT(DISTINCT c.campaign_id) as campaigns,
+                GROUP_CONCAT(DISTINCT t.ttp_code) as ttps
+            FROM actors a
+            LEFT JOIN campaign_actors ca ON a.id = ca.actor_id
+            LEFT JOIN campaigns c ON ca.campaign_id = c.id
+            LEFT JOIN campaign_ttps ct ON c.id = ct.campaign_id
+            LEFT JOIN ttps t ON ct.ttp_id = t.id
+            WHERE a.canonical_name = ?
+            GROUP BY a.id
+        """, (canonical_name,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
 
 def calculate_threat_score(data: dict[str, Any]) -> str:
-    """Calculate an overall threat level based on correlation findings."""
+    """Calculate an overall threat level based on correlation findings.
+
+    Design note: semantic-only correlations can never raise the score
+    above MEDIUM, regardless of how many there are or how high their
+    confidence is. This is intentional, not an oversight: the README
+    states that semantic results are an analyst aid, not an automatic
+    attribution decision, so they should never drive the score into
+    HIGH/CRITICAL territory on their own. Only deterministic evidence
+    (exact IOC matches, known actor aliases) can do that.
+    """
     if not isinstance(data, dict):
         raise TypeError("Correlations input must be a dictionary")
 
@@ -16,7 +51,6 @@ def calculate_threat_score(data: dict[str, Any]) -> str:
 
     total_matches = len(exact) + len(actor_aliases) + len(semantic)
 
-    # Regole per lo score globale
     if len(actor_aliases) >= 1 and len(exact) >= 1:
         return "CRITICAL"
     if len(actor_aliases) >= 1 or len(exact) >= 2:
@@ -26,8 +60,16 @@ def calculate_threat_score(data: dict[str, Any]) -> str:
     return "LOW"
 
 
-def generate_markdown_report(data: dict[str, Any], threat_level: str) -> str:
-    """Generate a structured Markdown report for analysts and frontend rendering."""
+def generate_markdown_report(
+    data: dict[str, Any],
+    threat_level: str,
+    enrich_fn=enrich_actor_info,
+) -> str:
+    """Generate a structured Markdown report for analysts and frontend rendering.
+
+    enrich_fn is injectable so tests can pass a fake lookup instead of
+    hitting the real knowledge database - see test_step3_report.py.
+    """
     timestamp = data.get("correlation_timestamp", "N/A")
     exact = data.get("exact_matches", [])
     actor_aliases = data.get("known_actor_alias_matches", [])
@@ -47,7 +89,7 @@ def generate_markdown_report(data: dict[str, Any], threat_level: str) -> str:
         "",
     ]
 
-    # Sezione 1: Actor Alias Matches
+    # Section 1: Actor Alias Matches
     if actor_aliases:
         report_lines.extend(["### Threat Actor Alias Matches", ""])
         for idx, item in enumerate(actor_aliases, 1):
@@ -66,7 +108,32 @@ def generate_markdown_report(data: dict[str, Any], threat_level: str) -> str:
                 ]
             )
 
-    # Sezione 2: Exact IOC Matches
+            # --- INTELLIGENCE ENRICHMENT from Knowledge DB ---
+            for canonical in item.get("canonical_actors", []):
+                if not canonical:
+                    continue
+                enrichment = enrich_fn(canonical)
+                if enrichment and any([
+                    enrichment.get("country"),
+                    enrichment.get("motivation"),
+                    enrichment.get("campaigns"),
+                    enrichment.get("ttps"),
+                    enrichment.get("notes")
+                ]):
+                    report_lines.append(f"**Intelligence Enrichment ({canonical}):**")
+                    if enrichment.get("country"):
+                        report_lines.append(f"- **Country:** {enrichment['country']}")
+                    if enrichment.get("motivation"):
+                        report_lines.append(f"- **Motivation:** {enrichment['motivation']}")
+                    if enrichment.get("campaigns"):
+                        report_lines.append(f"- **Known campaigns:** {enrichment['campaigns']}")
+                    if enrichment.get("ttps"):
+                        report_lines.append(f"- **Typical TTPs:** {enrichment['ttps']}")
+                    if enrichment.get("notes"):
+                        report_lines.append(f"- **Notes:** {enrichment['notes']}")
+                    report_lines.append("")
+
+    # Section 2: Exact IOC Matches
     if exact:
         report_lines.extend(["### Exact IOC Matches", ""])
         for idx, item in enumerate(exact, 1):
@@ -83,16 +150,19 @@ def generate_markdown_report(data: dict[str, Any], threat_level: str) -> str:
                 ]
             )
 
-    # Sezione 3: Semantic Matches
+    # Section 3: Semantic Matches
     if semantic:
         report_lines.extend(["### Semantic Correlations", ""])
         for idx, item in enumerate(semantic, 1):
+            doc_a = item.get("document_a")
+            doc_b = item.get("document_b")
             reasoning = item.get("reasoning", "No detailed reasoning.")
             confidence = item.get("confidence", "unknown").upper()
 
             report_lines.extend(
                 [
                     f"#### {idx}. Semantic Link (Confidence: `{confidence}`)",
+                    f"- **Documents Linked:** `{doc_a}` ↔ `{doc_b}`",
                     f"- **Analysis:** {reasoning}",
                     "",
                 ]
@@ -105,14 +175,14 @@ def generate_markdown_report(data: dict[str, Any], threat_level: str) -> str:
 
 
 def run_step3(
-    input_file: Path = Path("data/correlated/correlations.json"),
-    output_dir: Path = Path("data/final_reports"),
+    input_file: Path = CORRELATED_DIR / "correlations.json",
+    output_dir: Path = FINAL_REPORTS_DIR,
 ) -> None:
     """Read correlated data and export both JSON and Markdown artifacts."""
     if not input_file.exists():
         raise FileNotFoundError(f"Correlations file not found at {input_file}")
 
-    with open(input_file, "r", encoding="utf-8") as f:
+    with input_file.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
     if not isinstance(data, dict):
@@ -121,7 +191,7 @@ def run_step3(
     threat_level = calculate_threat_score(data)
     markdown_content = generate_markdown_report(data, threat_level)
 
-    # Struttura JSON finale arricchita per l'API / Frontend
+    # Enriched JSON structure for the API / frontend
     final_json_payload = {
         "summary": {
             "overall_threat_level": threat_level,
@@ -136,17 +206,14 @@ def run_step3(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Salviamo il file JSON
     json_path = output_dir / "threat_report.json"
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(final_json_payload, f, indent=2)
+    atomic_write_json(json_path, final_json_payload)
 
-    # 2. Salviamo il file Markdown
     md_path = output_dir / "threat_report.md"
-    with open(md_path, "w", encoding="utf-8") as f:
+    with md_path.open("w", encoding="utf-8") as f:
         f.write(markdown_content)
 
-    print(f"[+] Step 3 completato con successo! Report generati in: {output_dir}")
+    print(f"Step 3 complete. Reports generated in: {output_dir}")
 
 
 if __name__ == "__main__":

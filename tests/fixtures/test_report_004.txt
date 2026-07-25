@@ -1,0 +1,5 @@
+A routine audit of internal systems flagged a script that
+executed unusual command-line activity on a single workstation.
+No external command-and-control traffic, no known malicious
+domains or file hashes were identified, and no attribution to
+any known threat actor could be made at this time.

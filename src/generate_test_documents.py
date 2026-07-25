@@ -6,6 +6,10 @@ Document 1 and 3: same actor, different names, no shared IOC ->
                    should produce a SEMANTIC match (if the model is good enough)
 Document 2 and 3: no real connection -> should produce no match
 
+Document 4: deliberately unrelated to the above - no IOCs, no actors,
+            no attribution. Included so a full pipeline run also shows
+            a LOW/no-correlation outcome, not only the CRITICAL scenario
+            produced by documents 1-3.
 Run this script to populate data/extracted/, then run
 step2_correlation.py to see the correlation in action.
 """

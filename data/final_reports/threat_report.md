@@ -1,6 +1,6 @@
 # Threat Intelligence Analysis Report
 
-- **Correlation Timestamp:** `2026-07-24T13:48:57.215569+00:00`
+- **Correlation Timestamp:** `2026-07-25T20:10:25.884104+00:00`
 - **Overall Threat Severity:** `CRITICAL`
 
 ## Summary of Findings
@@ -14,6 +14,11 @@
 #### 1. Canonical Actor: APT29
 - **Documents Linked:** `test_report_001` ↔ `test_report_003`
 - **Aliases Identified:** APT29 / Cozy Bear
+
+**Intelligence Enrichment (APT29):**
+- **Country:** Russia
+- **Motivation:** Cyber espionage
+- **Notes:** Also known as Cozy Bear, NOBELIUM. Targets governments and defense.
 
 ### Exact IOC Matches
 

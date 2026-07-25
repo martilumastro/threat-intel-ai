@@ -4,7 +4,9 @@ import ipaddress
 import json
 import os
 import re
+import sqlite3
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +26,54 @@ HASH_RE = re.compile(r"^(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64}|[a-f0-9]{128})
 TTP_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$")
 
 GENERIC_TTPS = {"T1059", "T1071", "T1105", "T1041"} 
+
+
+# ===== DATABASE CONNECTION =====
+KNOWLEDGE_DB_PATH = PROJECT_DIR / "knowledge" / "threat_intel.db"
+
+
+@contextmanager
+def get_knowledge_db():
+    """Context manager for knowledge database connections.
+    
+    Enforces foreign keys automatically. Use this for read/write operations
+    on the knowledge database.
+    
+    Example:
+        with get_knowledge_db() as conn:
+            cursor = conn.execute("SELECT * FROM actors")
+            rows = cursor.fetchall()
+    """
+    if not KNOWLEDGE_DB_PATH.exists():
+        raise FileNotFoundError(
+            f"Knowledge database not found at {KNOWLEDGE_DB_PATH}. "
+            "Run knowledge/init_db.py first."
+        )
+    conn = sqlite3.connect(str(KNOWLEDGE_DB_PATH))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def get_connection(db_path: Path) -> sqlite3.Connection:
+    """Returns a SQLite connection with foreign keys enforced.
+    
+    Use this for one-off connections where you don't need a context manager.
+    For most use cases, prefer get_knowledge_db().
+    
+    NOTE: This function does NOT check if the database file exists.
+    It is intentionally permissive so it can be used by setup scripts
+    (init_db.py, migrate_aliases_json_to_db.py, add_actor_details.py)
+    that need to create the database.
+    """
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
 
 def _string_list(value: Any, category: str) -> list[str]:
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
