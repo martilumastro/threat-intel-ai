@@ -166,14 +166,13 @@ class TestCollectFeed:
             )
 
             assert new_count == 1
-            saved_file = temp_output_dir / "Test_Feed_Test_Article.txt"
+            saved_file = temp_output_dir / "Test_Feed_Test_Article.url"
             assert saved_file.exists()
             content = saved_file.read_text()
             assert "Source: Test Feed" in content
             assert "Title: Test Article" in content
             assert "https://example.com/article1" in content
-            # Check that either summary or full content is present
-            assert "test article summary" in content or "full article content" in content
+            assert "Published:" in content
 
     def test_collect_feed_skips_seen_articles(self, temp_output_dir, mock_feed_entry):
         """Should skip articles already in the seen registry."""
@@ -217,8 +216,8 @@ class TestCollectFeed:
             captured = capsys.readouterr()
             assert "warning: feed may be malformed" in captured.out
 
-    def test_collect_feed_skips_entries_without_text(self, temp_output_dir, capsys):
-        """Should skip entries with no text content."""
+    def test_collect_feed_saves_entries_without_feed_text(self, temp_output_dir, capsys):
+        """Should save a URL even when the feed has no summary or content."""
         seen_urls = set()
 
         # Create an entry without text
@@ -247,9 +246,10 @@ class TestCollectFeed:
                 temp_output_dir
             )
 
-            assert new_count == 0
+            assert new_count == 1
+            assert (temp_output_dir / "Test_Feed_Test_Article.url").exists()
             captured = capsys.readouterr()
-            assert "no text content available" in captured.out
+            assert "saved URL: Test Article" in captured.out
 
 
 class TestRunCollection:

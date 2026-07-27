@@ -26,6 +26,7 @@ py-modules = [
     "step1_extraction",
     "step2_correlation",
     "generate_test_documents",
+    "knowledge_context",
 ]
 
 [tool.pytest.ini_options]

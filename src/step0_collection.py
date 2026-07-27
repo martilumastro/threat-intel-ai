@@ -3,8 +3,8 @@ STEP 0 - Collection Module (Phase 1: narrative RSS feeds)
 ------------------------------------------------------------
 Reads the list of narrative feeds from knowledge/sources.json, fetches
 new articles via feedparser, deduplicates against a persistent registry
-of already-seen article URLs, and saves new articles as .txt files -
-the same input format step4_orchestrator.py already expects.
+of already-seen article URLs, and saves new articles as .url files -
+the same input format step4_orchestrator.py will expect.
 
 Structured feeds (CISA KEV, Abuse.ch, Blocklist.de, HIBP metadata) are
 listed in sources.json but not yet implemented here: they publish
@@ -81,7 +81,7 @@ def extract_entry_text(entry: feedparser.FeedParserDict) -> str:
 
 
 def collect_feed(feed_name: str, feed_url: str, seen_urls: set[str], output_dir: Path) -> int:
-    """Fetch one feed, save new entries as .txt, return count saved."""
+    """Fetch one feed, save new entries as .url files, return count saved."""
     parsed = feedparser.parse(feed_url)
 
     if parsed.bozo:
@@ -95,21 +95,15 @@ def collect_feed(feed_name: str, feed_url: str, seen_urls: set[str], output_dir:
 
         title = entry.get("title", "untitled")
         published = entry.get("published", "")
-        text = extract_entry_text(entry)
 
-        if not text:
-            print(f"[{feed_name}] skipping '{title}': no text content available")
-            seen_urls.add(link)
-            continue
-
-        # --- NO CHUNKING - save document as-is ---
+        # --- Save ONLY the URL (no text) ---
         document_name = safe_document_name(f"{feed_name}_{title}")
-        output_path = output_dir / f"{document_name}.txt"
-        report_content = f"Source: {feed_name}\nTitle: {title}\nPublished: {published}\nURL: {link}\n\n{text}"
+        output_path = output_dir / f"{document_name}.url"
+        report_content = f"Source: {feed_name}\nTitle: {title}\nPublished: {published}\nURL: {link}\n"
         output_path.write_text(report_content, encoding="utf-8")
         seen_urls.add(link)
         new_count += 1
-        print(f"[{feed_name}] saved: {title}")
+        print(f"[{feed_name}] saved URL: {title}")
 
     return new_count
 
@@ -124,12 +118,12 @@ def run_collection(output_dir: Path) -> None:
         try:
             new_count = collect_feed(feed["name"], feed["url"], seen_urls, output_dir)
             total_new += new_count
-            print(f"[{feed['name']}] {new_count} new article(s)")
+            print(f"[{feed['name']}] {new_count} new URL(s)")
         except requests.RequestException as error:
             print(f"[{feed['name']}] FAILED to fetch feed: {error}")
 
     save_seen_registry(seen_urls)
-    print(f"\nCollection complete: {total_new} new article(s) saved to {output_dir}")
+    print(f"\nCollection complete: {total_new} new URL(s) saved to {output_dir}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -138,7 +132,7 @@ def parse_args() -> argparse.Namespace:
         "--output-dir",
         type=Path,
         default=DATA_DIR / "raw_reports",
-        help="Folder to save new articles as .txt files, ready for the orchestrator.",
+        help="Folder to save new articles as .url files, ready for the orchestrator.",
     )
     return parser.parse_args()
 

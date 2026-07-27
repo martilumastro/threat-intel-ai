@@ -32,10 +32,24 @@ IOC_CATEGORIES = (
     "urls",
     "suspicious_files"
 )
+
+# ===== REGEX PATTERNS FOR IOC EXTRACTION =====
+IP_PATTERN = re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b')
+IP_DEFANGED_PATTERN = re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\[\.\]){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b')
 DOMAIN_RE = re.compile(r"^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 HASH_RE = re.compile(r"^(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64}|[a-f0-9]{128})$")
 TTP_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$")
+CVE_RE = re.compile(r"^CVE-\d{4}-\d+$", re.IGNORECASE)
+URL_RE = re.compile(r'https?://[^\s]+|hxxp://[^\s]+|hxxps://[^\s]+', re.IGNORECASE)
+FILE_PATTERN = re.compile(r'\b[\w\-\.]+\.(?:exe|dll|zip|rar|7z|js|py|sh|bat|cmd|vbs|ps1|bin|dat|msi|sys)\b', re.IGNORECASE)
+DOMAIN_FIND_RE = re.compile(
+    r'\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.|\[\.\]|\(\.\)))+[a-z]{2,63}\b'
+)
+HASH_FIND_RE = re.compile(r'\b(?:[a-f0-9]{128}|[a-f0-9]{64}|[a-f0-9]{40}|[a-f0-9]{32})\b')
+EMAIL_FIND_RE = re.compile(r'\b[^\s@]+@[^\s@]+\.[^\s@]+\b')
+TTP_FIND_RE = re.compile(r'\bT\d{4}(?:\.\d{3})?\b')
+CVE_FIND_RE = re.compile(r'\bCVE-\d{4}-\d+\b', re.IGNORECASE)
 
 GENERIC_TTPS = {"T1059", "T1071", "T1105", "T1041"}
 
@@ -72,6 +86,83 @@ def is_non_actor(name: str) -> bool:
         if keyword in name_lower:
             return True
     return False
+
+
+# ===== DETERMINISTIC IOC EXTRACTION WITH REGEX =====
+
+def extract_iocs_with_regex(text: str) -> dict:
+    """
+    Extract IOCs from text using regex patterns.
+    This is a deterministic fallback when LLM extraction fails.
+    """
+    # IP addresses (plain and de-fanged)
+    ips = []
+    for ip in IP_PATTERN.findall(text):
+        try:
+            ipaddress.ip_address(ip)
+            ips.append(ip)
+        except ValueError:
+            pass
+    for ip in IP_DEFANGED_PATTERN.findall(text):
+        ip_clean = ip.replace("[.]", ".")
+        try:
+            ipaddress.ip_address(ip_clean)
+            ips.append(ip_clean)
+        except ValueError:
+            pass
+    ips = list(set(ips))
+    
+    # Domains - only valid domains (exclude file names, paths, variables)
+    domains = []
+    for domain in DOMAIN_FIND_RE.findall(text.lower()):
+        domain_clean = domain.replace("[.]", ".")
+        # Skip if it looks like a file path, variable, or code artifact
+        if any(x in domain_clean for x in ['.js', '.json', '.yml', '.yaml', '.lock', '.dat', '.cache', '.bin']):
+            continue
+        if DOMAIN_RE.fullmatch(domain_clean):
+            # Exclude source domains
+            is_source = False
+            for source in ["unit42.paloaltonetworks.com", "krebsonsecurity.com", "bleepingcomputer.com",
+                          "securelist.com", "isc.sans.edu", "checkpoint.com", "research.checkpoint.com",
+                          "microsoft.com", "google.com", "github.com", "crowdstrike.com", "recordedfuture.com",
+                          "sans.edu", "paloaltonetworks.com"]:
+                if source in domain_clean:
+                    is_source = True
+                    break
+            if not is_source:
+                domains.append(domain_clean)
+    domains = list(set(domains))
+    
+    # Hashes
+    hashes = list(set(HASH_FIND_RE.findall(text.lower())))
+    
+    # Emails
+    normalized_email_text = text.lower().replace("[at]", "@").replace("[.]", ".")
+    emails = list(set(EMAIL_FIND_RE.findall(normalized_email_text)))
+    
+    # MITRE TTPs
+    ttps = list(set(TTP_FIND_RE.findall(text.upper())))
+    
+    # CVE IDs
+    cves = list(set(CVE_FIND_RE.findall(text.upper())))
+    
+    # URLs
+    urls = list(set(URL_RE.findall(text)))
+    
+    # Suspicious files
+    suspicious_files = list(set(FILE_PATTERN.findall(text)))
+    
+    return {
+        "ip": ips,
+        "domains": domains,
+        "hashes": hashes,
+        "emails": emails,
+        "mitre_ttps": ttps,
+        "actors_mentioned": [],  # LLM handles actors
+        "cve_ids": cves,
+        "urls": urls,
+        "suspicious_files": suspicious_files
+    }
 
 
 # ===== DOCUMENT CHUNKING =====
@@ -190,7 +281,7 @@ def normalize_extraction(data: Any) -> dict[str, list[str]]:
 
     # IP addresses
     for raw in _string_list(data.get("ip", []), "ip"):
-        value = raw.strip()
+        value = raw.strip().replace("[.]", ".")
         try:
             result["ip"].append(str(ipaddress.ip_address(value)))
         except ValueError:
@@ -226,17 +317,16 @@ def normalize_extraction(data: Any) -> dict[str, list[str]]:
         if value and not is_non_actor(value):
             result["actors_mentioned"].append(value)
 
-        # CVE IDs
+    # CVE IDs
     for raw in _string_list(data.get("cve_ids", []), "cve_ids"):
         value = raw.strip().upper()
-        # Regex semplice per CVE (es. CVE-2024-1234)
         if re.match(r"^CVE-\d{4}-\d+$", value):
             result["cve_ids"].append(value)
 
     # URLs
     for raw in _string_list(data.get("urls", []), "urls"):
         value = raw.strip()
-        if value.startswith(("http://", "https://")):
+        if value.startswith(("http://", "https://", "hxxp://", "hxxps://")):
             result["urls"].append(value)
 
     # Suspicious files

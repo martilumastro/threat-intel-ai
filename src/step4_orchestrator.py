@@ -14,6 +14,7 @@ Usage:
 """
 
 import argparse
+import re
 import sys
 from itertools import combinations
 from pathlib import Path
@@ -36,11 +37,62 @@ from step3_report import run_step3
 FINAL_REPORTS_DIR = DATA_DIR / "final_reports"
 
 
+def fetch_article_from_url(url: str) -> str:
+    """Fetch and clean article content from URL."""
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        raise RuntimeError("BeautifulSoup not installed. Run: pip install beautifulsoup4")
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    try:
+        response = requests.get(url, timeout=30, headers=headers)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Remove unwanted elements
+        for tag in soup(['script', 'style', 'nav', 'header', 'footer', 'aside']):
+            tag.decompose()
+        
+        text = soup.get_text(separator='\n', strip=True)
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        return text
+    except (AttributeError, ValueError, TypeError) as e:
+        raise RuntimeError(f"Failed to fetch {url}: {e}")
+
+
+def read_article_file(file_path: Path) -> str:
+    """
+    Read a .url or .txt file and return the article text.
+    
+    - .url files: fetch the article from the URL
+    - .txt files: read the text directly
+    """
+    content = file_path.read_text(encoding="utf-8")
+    
+    if file_path.suffix == ".url":
+        # Parse the .url file to extract the URL
+        url_match = re.search(r'URL: (.+)', content)
+        if url_match:
+            url = url_match.group(1).strip()
+            print(f"    Fetching article from URL: {url[:80]}...")
+            return fetch_article_from_url(url)
+        else:
+            return content
+    else:
+        # .txt file: use as-is
+        return content
+
+
 def run_extraction_stage(input_dir: Path, skip_existing: bool) -> int:
-    """Runs Step 1 on every .txt file in input_dir. Returns count processed."""
-    report_paths = sorted(input_dir.glob("*.txt"))
+    """Runs Step 1 on every .txt or .url file in input_dir. Returns count processed."""
+    # Cerca sia .txt che .url
+    report_paths = sorted(input_dir.glob("*.txt")) + sorted(input_dir.glob("*.url"))
     if not report_paths:
-        print(f"No .txt reports found in {input_dir}")
+        print(f"No .txt or .url reports found in {input_dir}")
         return 0
 
     processed = 0
@@ -53,7 +105,13 @@ def run_extraction_stage(input_dir: Path, skip_existing: bool) -> int:
             continue
 
         print(f"[extraction] {document_name}: processing...")
-        text = report_path.read_text(encoding="utf-8")
+        
+        try:
+            text = read_article_file(report_path)
+        except RuntimeError as error:
+            print(f"[extraction] {document_name}: FAILED to fetch content ({error}) - skipping")
+            continue
+            
         try:
             data = extract_ioc(text)
         except (requests.RequestException, RuntimeError) as error:
@@ -127,10 +185,7 @@ def run_reporting_stage() -> None:
 def run_pipeline(input_dir: Path, skip_existing: bool, no_correlation: bool) -> None:
     """Run the full pipeline: extraction, correlation, reporting."""
     
-    # Check Ollama availability - a lightweight GET to /api/tags, which
-    # just lists installed models and responds instantly, instead of a
-    # POST to /api/generate, which would wait for a full model response
-    # and could itself time out on slow hardware even when Ollama is fine.
+    # Check Ollama availability
     ollama_base_url = OLLAMA_URL.rsplit("/api/", 1)[0]
     try:
         requests.get(f"{ollama_base_url}/api/tags", timeout=5)
@@ -166,7 +221,7 @@ def parse_args() -> argparse.Namespace:
         "--input-dir",
         type=Path,
         required=True,
-        help="Folder containing raw .txt reports to extract IOCs from.",
+        help="Folder containing raw .txt or .url reports to extract IOCs from.",
     )
     parser.add_argument(
         "--skip-existing",

@@ -58,8 +58,98 @@ CREATE TABLE IF NOT EXISTS campaign_ttps (
 );
 
 
+-- DOMAINS TABLES (NEW)
+
+CREATE TABLE IF NOT EXISTS domains (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    domain TEXT UNIQUE NOT NULL,
+    description TEXT,
+    category TEXT,               -- c2, phishing, malware, scanner, mining, impersonation, other
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS actor_domains (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    domain_id INTEGER NOT NULL REFERENCES domains(id) ON DELETE CASCADE,
+    actor_id INTEGER NOT NULL REFERENCES actors(id) ON DELETE CASCADE,
+    frequency INTEGER DEFAULT 1,
+    UNIQUE(domain_id, actor_id)
+);
+
+
+-- LEARNING TABLES (NEW)
+
+-- Positive examples: what to extract
+CREATE TABLE IF NOT EXISTS ioc_examples (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL,              -- ip, domain, hash, actor, ttp, cve, url, suspicious_file
+    value TEXT NOT NULL,
+    context TEXT,                        -- brief context / source snippet
+    source_article TEXT,                 -- which article this came from
+    confidence INTEGER DEFAULT 1,        -- 1-5, how confident we are
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved BOOLEAN DEFAULT 0,          -- 0 = pending, 1 = approved by user
+    UNIQUE(category, value)
+);
+
+-- Negative examples: what NOT to extract (false positives)
+CREATE TABLE IF NOT EXISTS false_positives (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category TEXT NOT NULL,
+    value TEXT NOT NULL,
+    context TEXT,
+    source_article TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    approved BOOLEAN DEFAULT 0,
+    UNIQUE(category, value)
+);
+
+-- TTP patterns per actor (learned associations)
+CREATE TABLE IF NOT EXISTS actor_ttp_patterns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_id INTEGER NOT NULL REFERENCES actors(id) ON DELETE CASCADE,
+    ttp_id INTEGER NOT NULL REFERENCES ttps(id) ON DELETE CASCADE,
+    frequency INTEGER DEFAULT 1,
+    confidence INTEGER DEFAULT 1,
+    UNIQUE(actor_id, ttp_id)
+);
+
+-- Domain patterns per actor (learned associations)
+CREATE TABLE IF NOT EXISTS actor_domain_patterns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_id INTEGER NOT NULL REFERENCES actors(id) ON DELETE CASCADE,
+    domain_pattern TEXT NOT NULL,
+    frequency INTEGER DEFAULT 1,
+    confidence INTEGER DEFAULT 1,
+    UNIQUE(actor_id, domain_pattern)
+);
+
+-- Extraction log: track what was processed and what was suggested
+CREATE TABLE IF NOT EXISTS extraction_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    article_url TEXT,
+    article_title TEXT,
+    extraction_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    iocs_found TEXT,                     -- JSON: what was extracted
+    actors_found TEXT,                   -- JSON: actors found
+    ttps_found TEXT,                     -- JSON: TTPs found
+    new_iocs TEXT,                       -- JSON: new IOCs suggested to user
+    user_approved BOOLEAN DEFAULT 0      -- 0 = pending, 1 = approved
+);
+
+
+-- INDEXES
+
 CREATE INDEX IF NOT EXISTS idx_actor_aliases_alias ON actor_aliases(alias);
 CREATE INDEX IF NOT EXISTS idx_ttps_code ON ttps(ttp_code);
+CREATE INDEX IF NOT EXISTS idx_domains_domain ON domains(domain);
+CREATE INDEX IF NOT EXISTS idx_actor_domains_actor ON actor_domains(actor_id);
+CREATE INDEX IF NOT EXISTS idx_ioc_examples_category ON ioc_examples(category);
+CREATE INDEX IF NOT EXISTS idx_false_positives_category ON false_positives(category);
+CREATE INDEX IF NOT EXISTS idx_actor_ttp_patterns_actor ON actor_ttp_patterns(actor_id);
+CREATE INDEX IF NOT EXISTS idx_actor_domain_patterns_actor ON actor_domain_patterns(actor_id);
+CREATE INDEX IF NOT EXISTS idx_extraction_log_timestamp ON extraction_log(extraction_timestamp);
 """
 
 
@@ -70,10 +160,10 @@ def init_db(db_path: Path = DB_PATH) -> None:
     try:
         connection.executescript(SCHEMA)
         connection.commit()
+        print(f"Schema ready at: {db_path}")
     finally:
         connection.close()
 
 
 if __name__ == "__main__":
     init_db()
-    print(f"Schema ready at: {DB_PATH}")

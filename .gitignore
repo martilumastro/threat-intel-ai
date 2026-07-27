@@ -19,6 +19,10 @@ venv/
 /data/raw_reports/*
 !/data/raw_reports/.gitkeep
 
+# Locally selected URL manifests for manual end-to-end testing
+/data/raw_reports_test/*
+!/data/raw_reports_test/.gitkeep
+
 # Sample folder for manual pipeline testing on real collected articles
 /data/raw_reports_sample/
 
@@ -26,8 +30,28 @@ venv/
 # local processing state, not curated knowledge, regenerable from scratch
 /data/collection_state.json
 
-# SQLite temporary files for the knowledge database - only the main
-# .db file itself is versioned, never its journal/WAL/shm siblings
+# SQLite database files (records, not schema)
+/knowledge/threat_intel.db
 /knowledge/*.db-journal
 /knowledge/*.db-wal
 /knowledge/*.db-shm
+/knowledge/*.db.bak
+/knowledge/*.db.backup
+
+# JSON data files (records, not schema)
+/knowledge/actor_aliases.json
+/knowledge/sources.json
+
+# Python scripts for populating the database (records, not schema)
+/knowledge/migrate_aliases_json_to_db.py
+/knowledge/add_actors.py
+/knowledge/add_campaigns.py
+/knowledge/add_ttps.py
+/knowledge/add_domains.py
+/knowledge/add_ioc_examples.py
+/knowledge/add_false_positives.py
+/knowledge/add_actor_details.py
+/knowledge/update_domains.py
+
+# Editor recovery files can contain private source or record data
+*.swp
