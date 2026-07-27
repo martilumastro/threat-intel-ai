@@ -20,7 +20,7 @@ from pathlib import Path
 
 import requests
 
-from common import CORRELATED_DIR, DATA_DIR, EXTRACTED_DIR, MODEL, OLLAMA_URL
+from common import CORRELATED_DIR, DATA_DIR, EXTRACTED_DIR, OLLAMA_URL
 from step1_extraction import extract_ioc, save_result
 from step2_correlation import (
     evaluate_semantic_correlation,
@@ -127,17 +127,17 @@ def run_reporting_stage() -> None:
 def run_pipeline(input_dir: Path, skip_existing: bool, no_correlation: bool) -> None:
     """Run the full pipeline: extraction, correlation, reporting."""
     
-    # Check Ollama availability
+    # Check Ollama availability - a lightweight GET to /api/tags, which
+    # just lists installed models and responds instantly, instead of a
+    # POST to /api/generate, which would wait for a full model response
+    # and could itself time out on slow hardware even when Ollama is fine.
+    ollama_base_url = OLLAMA_URL.rsplit("/api/", 1)[0]
     try:
-        requests.post(
-            OLLAMA_URL,
-            json={"model": MODEL, "prompt": "test", "stream": False},
-            timeout=10
-        )
+        requests.get(f"{ollama_base_url}/api/tags", timeout=5)
     except requests.RequestException:
         print("\n" + "!" * 60)
         print("WARNING: Ollama is not responding!")
-        print(f"Check that Ollama is running at: {OLLAMA_URL}")
+        print(f"Check that Ollama is running at: {ollama_base_url}")
         print("!" * 60 + "\n")
     
     print(f"=== Step 1: extraction (input: {input_dir}) ===")

@@ -14,3 +14,20 @@ venv/
 !/data/extracted/.gitkeep
 /data/correlated/*
 !/data/correlated/.gitkeep
+/data/final_reports/*
+!/data/final_reports/.gitkeep
+/data/raw_reports/*
+!/data/raw_reports/.gitkeep
+
+# Sample folder for manual pipeline testing on real collected articles
+/data/raw_reports_sample/
+
+# Step 0 collection state (which articles have already been collected) -
+# local processing state, not curated knowledge, regenerable from scratch
+/data/collection_state.json
+
+# SQLite temporary files for the knowledge database - only the main
+# .db file itself is versioned, never its journal/WAL/shm siblings
+/knowledge/*.db-journal
+/knowledge/*.db-wal
+/knowledge/*.db-shm

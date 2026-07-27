@@ -16,9 +16,15 @@ class FakeResponse:
 
 def test_extract_ioc_uses_and_validates_the_model_response(monkeypatch, expected_extractions):
     expected = expected_extractions["001"]
+    # Aggiungi i nuovi campi all'expected
+    expected_with_new_fields = {
+        **expected,
+        "cve_ids": [],
+        "urls": [],
+        "suspicious_files": []
+    }
     monkeypatch.setattr(step1_extraction.requests, "post", lambda *args, **kwargs: FakeResponse(expected))
-
-    assert step1_extraction.extract_ioc("untrusted test input") == expected
+    assert step1_extraction.extract_ioc("untrusted test input") == expected_with_new_fields
 
 
 def test_save_result_writes_a_normalized_record(tmp_path, monkeypatch):

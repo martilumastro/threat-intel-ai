@@ -11,6 +11,7 @@ The result is saved with status "correlated", ready for Step 3
 """
 
 import json
+import re
 from datetime import UTC, datetime
 from itertools import combinations
 
@@ -58,6 +59,12 @@ Respond ONLY with a JSON object:
 {{"related": true/false, "confidence": "low/medium/high", "reasoning": "brief explanation"}}
 """
 
+
+def get_base_document_name(source_document: str) -> str:
+    """Extract the base document name by removing _part{N} suffix."""
+    return re.sub(r"_part\d+$", "", source_document)
+
+
 def load_extracted_documents() -> list[dict]:
     """Reads all JSON files with status 'extracted' from the input folder."""
     documents = []
@@ -67,10 +74,21 @@ def load_extracted_documents() -> list[dict]:
                 record = json.load(file_handle)
             if record.get("status") == "extracted" and isinstance(record.get("source_document"), str):
                 record["data"] = normalize_extraction(record.get("data"))
+                # Add base name for chunk grouping (if applicable)
+                record["base_document"] = get_base_document_name(record["source_document"])
                 documents.append(record)
         except (OSError, json.JSONDecodeError, ValueError) as error:
             print(f"Skipping invalid extraction file {path.name}: {error}")
     return documents
+
+
+def group_chunks_by_base_document(documents: list[dict]) -> dict[str, list[dict]]:
+    """Group extracted chunks by their base document name."""
+    groups = {}
+    for doc in documents:
+        base = doc.get("base_document", doc["source_document"])
+        groups.setdefault(base, []).append(doc)
+    return groups
 
 
 def find_exact_matches(documents: list[dict]) -> list[dict]:
@@ -97,6 +115,7 @@ def find_exact_matches(documents: list[dict]) -> list[dict]:
                 })
 
     return matches_found
+
 
 def find_known_actor_alias_matches(
     documents: list[dict], aliases: dict[str, list[str]]
@@ -148,6 +167,7 @@ def find_known_actor_alias_matches(
         )
 
     return matches_found
+
 
 def evaluate_semantic_correlation(doc_a: dict, doc_b: dict) -> dict:
     """Asks the AI model whether two documents seem related, without identical IOCs."""
@@ -203,6 +223,7 @@ def evaluate_semantic_correlation(doc_a: dict, doc_b: dict) -> dict:
         print(f"    RAW RESPONSE ON FAILURE: {response.json()['response']!r}")
         return {"related": False, "confidence": "low", "reasoning": f"invalid model response: {error}"}
 
+
 def is_semantic_candidate(doc_a: dict, doc_b: dict) -> bool:
     """Avoid LLM calls for pairs with no structured evidence to compare."""
     data_a, data_b = doc_a["data"], doc_b["data"]
@@ -220,6 +241,7 @@ def is_semantic_candidate(doc_a: dict, doc_b: dict) -> bool:
         or specific_ttps_a & specific_ttps_b  # Shared sub-techniques
         or (data_a["actors_mentioned"] and data_b["actors_mentioned"])
     )
+
 
 def save_correlations(
     exact_matches: list[dict],
