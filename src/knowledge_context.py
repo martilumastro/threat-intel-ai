@@ -1,7 +1,6 @@
 """Read curated threat-intelligence knowledge for extraction-time support."""
 
 import sqlite3
-from typing import Any
 
 from common import KNOWLEDGE_DB_PATH
 
