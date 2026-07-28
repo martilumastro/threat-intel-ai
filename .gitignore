@@ -53,6 +53,9 @@ venv/
 /knowledge/add_actor_details.py
 /knowledge/update_domains.py
 
+# Other Python scripts for populating the database
+/scripts/populate_db/
+
 # Editor recovery files can contain private source or record data
 *.swp
 
