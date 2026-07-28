@@ -45,6 +45,7 @@ venv/
 # Python scripts for populating the database (records, not schema)
 /knowledge/migrate_aliases_json_to_db.py
 /knowledge/add_actors.py
+/knowledge/add_alias.py
 /knowledge/add_campaigns.py
 /knowledge/add_ttps.py
 /knowledge/add_domains.py
