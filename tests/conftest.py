@@ -218,8 +218,8 @@ def mock_knowledge_db(monkeypatch, populated_knowledge_db):
     This fixture should be used in tests that need to import modules
     that reference common.KNOWLEDGE_DB_PATH.
     """
-    import common
     import actor_aliases
+    import common
     
     # Override the path in both modules
     monkeypatch.setattr(common, "KNOWLEDGE_DB_PATH", populated_knowledge_db)
