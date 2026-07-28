@@ -39,7 +39,8 @@ def test_load_skips_corrupt_records(tmp_path, monkeypatch, expected_extractions)
     assert [document["source_document"] for document in documents] == ["report_001"]
 
 
-def test_known_actor_alias_match_is_deterministic(expected_extractions):
+def test_known_actor_alias_match_is_deterministic(expected_extractions, mock_knowledge_db):
+    """Test that known actor aliases are resolved deterministically."""
     documents = [
         _document("report_001", expected_extractions["001"]),
         _document("report_003", expected_extractions["003"]),

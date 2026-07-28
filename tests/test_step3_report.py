@@ -66,7 +66,8 @@ def test_calculate_threat_score_type_error():
         calculate_threat_score(["invalid_list"])  # type: ignore
 
 
-def test_generate_markdown_report_structure():
+def test_generate_markdown_report_structure(mock_knowledge_db):
+    """Test that the markdown report is generated correctly."""
     data = {
         "correlation_timestamp": "2026-07-24T13:48:57Z",
         "exact_matches": [
