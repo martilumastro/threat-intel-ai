@@ -1,23 +1,20 @@
-from django.shortcuts import render
 from rest_framework import viewsets
-from rest_framework.decorators import action
-from rest_framework.response import Response
 
 from .models import (
+    TTP,
     Actor,
     Campaign,
-    TTP,
     Domain,
-    IOCExample,
     FalsePositive,
+    IOCExample,
 )
 from .serializers import (
     ActorSerializer,
     CampaignSerializer,
-    TTPSerializer,
     DomainSerializer,
-    IOCExampleSerializer,
     FalsePositiveSerializer,
+    IOCExampleSerializer,
+    TTPSerializer,
 )
 
 

@@ -1,17 +1,15 @@
 """DRF serializers for threat_intel models."""
 
 from rest_framework import serializers
+
 from .models import (
+    TTP,
     Actor,
     ActorAlias,
     Campaign,
-    CampaignActor,
-    CampaignTTP,
     Domain,
-    ActorDomain,
-    IOCExample,
     FalsePositive,
-    TTP,
+    IOCExample,
 )
 
 

@@ -33,3 +33,8 @@ py-modules = [
 pythonpath = [".", "src"]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.ruff.lint]
+ignore = [
+    "RUF012",  # Ignora mutable default values in class attributes (Django choices/fields)
+]

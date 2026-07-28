@@ -3,7 +3,6 @@ from django.db import models
 # Create your models here.
 """Django models mirroring the threat_intel.db schema."""
 
-from django.db import models
 
 
 class Actor(models.Model):
