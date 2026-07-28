@@ -42,7 +42,7 @@ HASH_RE = re.compile(r"^(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64}|[a-f0-9]{128})
 TTP_RE = re.compile(r"^T\d{4}(?:\.\d{3})?$")
 CVE_RE = re.compile(r"^CVE-\d{4}-\d+$", re.IGNORECASE)
 URL_RE = re.compile(r'https?://[^\s]+|hxxp://[^\s]+|hxxps://[^\s]+', re.IGNORECASE)
-FILE_PATTERN = re.compile(r'\b[\w\-\.]+\.(?:exe|dll|zip|rar|7z|js|py|sh|bat|cmd|vbs|ps1|bin|dat|msi|sys)\b', re.IGNORECASE)
+FILE_PATTERN = re.compile(r'\b[\w\-\.]+\.(?:exe|dll|zip|rar|7z|js|py|sh|bat|cmd|vbs|ps1|bin|dat|msi|sys|hprof)\b', re.IGNORECASE)
 DOMAIN_FIND_RE = re.compile(
     r'\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.|\[\.\]|\(\.\)))+[a-z]{2,63}\b'
 )
@@ -71,6 +71,54 @@ NON_ACTOR_KEYWORDS = [
     "sans.edu", "isc.sans.edu", "securelist.com", "checkpoint.com",
     "bleepingcomputer.com", "krebsonsecurity.com", "unit42.paloaltonetworks.com"
 ]
+
+# ===== DOMAIN FILTER =====
+# Known legitimate source domains (never extract as IOCs)
+SOURCE_DOMAINS = {
+    "unit42.paloaltonetworks.com", "paloaltonetworks.com", "crowdstrike.com",
+    "checkpoint.com", "research.checkpoint.com", "securelist.com",
+    "recordedfuture.com", "mandiant.com", "fireeye.com",
+    "krebsonsecurity.com", "bleepingcomputer.com", "thehackernews.com",
+    "isc.sans.edu", "sans.edu", "theregister.com", "securityweek.com",
+    "microsoft.com", "google.com", "github.com", "amazon.com", "aws.amazon.com",
+    "azure.com", "cloudflare.com", "nginx.com", "apache.org",
+    "python.org", "nodejs.org", "npmjs.org", "pypi.org", "docker.com",
+    "linux.org", "kernel.org", "ubuntu.com", "debian.org",
+    "twitter.com", "linkedin.com", "facebook.com", "telegram.org",
+    "youtube.com", "reddit.com", "github.io",
+}
+
+# Keywords that indicate a domain is actually a file path or config key
+EXCLUDE_DOMAIN_KEYWORDS = {
+    '.js', '.json', '.yml', '.yaml', '.lock', '.dat', '.cache', '.bin',
+    '.hprof', '.config', '.properties', '.xml', '.html', '.css', '.scss',
+    'management.', 'endpoints.', 'actuator.', 'admin-api.', 'base-path',
+    'process.', 'system.', 'runtime.', 'environment.', 'application.',
+    # Package names
+    '@asyncapi', '@redhat', '@tanstack', '@tanstack/', '@antv', '@uipath',
+    '@cap-js', '@bitwarden', '@opensearch', '@mistralai', '@squawk',
+    '@asyncapi/specs', '@asyncapi/generator', '@asyncapi/generator-helpers',
+    '@asyncapi/generator-components', '@redhat-cloud-services',
+}
+
+# ===== SUSPICIOUS FILE EXTENSIONS =====
+SUSPICIOUS_EXTENSIONS = {
+    '.exe', '.dll', '.sys', '.drv', '.scr', '.com',
+    '.js', '.py', '.sh', '.bat', '.cmd', '.vbs', '.ps1', '.rb', '.pl', '.php',
+    '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz',
+    '.docm', '.xlsm', '.pptm', '.dotm',
+    '.bin', '.dat', '.msi', '.hprof', '.tmp', '.log', '.ini', '.cfg', '.conf',
+}
+
+# ===== EMAIL FILTER =====
+# Package names that look like emails (false positives)
+PACKAGE_NAME_PATTERNS = {
+    'mbt@1.2.48', 'asyncapi/specs@6.11.2', 'asyncapi/generator-components@0.7.1',
+    'intercom-client@7.0.4', 'cap-js/sqlite@2.2.2', 'cap-js/postgres@2.2.2',
+    'cap-js/db-service@2.10.1', 'asyncapi/generator@3.3.1', 
+    'asyncapi/generator-helpers@1.1.1', 'bitwarden/cli@2026.4.0',
+    'asyncapi/specs@6.11.2-alpha.1',
+}
 
 
 def is_non_actor(name: str) -> bool:
@@ -116,29 +164,40 @@ def extract_iocs_with_regex(text: str) -> dict:
     domains = []
     for domain in DOMAIN_FIND_RE.findall(text.lower()):
         domain_clean = domain.replace("[.]", ".")
-        # Skip if it looks like a file path, variable, or code artifact
-        if any(x in domain_clean for x in ['.js', '.json', '.yml', '.yaml', '.lock', '.dat', '.cache', '.bin']):
+        
+        # Skip source domains
+        if domain_clean in SOURCE_DOMAINS:
             continue
+        
+        # Skip if it looks like a file path, variable, or code artifact
+        if any(kw in domain_clean for kw in EXCLUDE_DOMAIN_KEYWORDS):
+            continue
+        
+        # Skip local/test domains
+        if any(domain_clean.endswith(suffix) for suffix in ['.local', '.test', '.example']):
+            continue
+        
         if DOMAIN_RE.fullmatch(domain_clean):
-            # Exclude source domains
-            is_source = False
-            for source in ["unit42.paloaltonetworks.com", "krebsonsecurity.com", "bleepingcomputer.com",
-                          "securelist.com", "isc.sans.edu", "checkpoint.com", "research.checkpoint.com",
-                          "microsoft.com", "google.com", "github.com", "crowdstrike.com", "recordedfuture.com",
-                          "sans.edu", "paloaltonetworks.com"]:
-                if source in domain_clean:
-                    is_source = True
-                    break
-            if not is_source:
-                domains.append(domain_clean)
+            domains.append(domain_clean)
     domains = list(set(domains))
     
     # Hashes
     hashes = list(set(HASH_FIND_RE.findall(text.lower())))
     
-    # Emails
+    # Emails - filter out package names
     normalized_email_text = text.lower().replace("[at]", "@").replace("[.]", ".")
-    emails = list(set(EMAIL_FIND_RE.findall(normalized_email_text)))
+    email_candidates = set(EMAIL_FIND_RE.findall(normalized_email_text))
+    emails = []
+    for email in email_candidates:
+        # Skip package names that look like emails
+        if email in PACKAGE_NAME_PATTERNS:
+            continue
+        # Skip if contains "/" or ":" (often package references)
+        if "/" in email or ":" in email:
+            continue
+        if EMAIL_RE.fullmatch(email):
+            emails.append(email)
+    emails = list(set(emails))
     
     # MITRE TTPs
     ttps = list(set(TTP_FIND_RE.findall(text.upper())))
@@ -149,8 +208,13 @@ def extract_iocs_with_regex(text: str) -> dict:
     # URLs
     urls = list(set(URL_RE.findall(text)))
     
-    # Suspicious files
-    suspicious_files = list(set(FILE_PATTERN.findall(text)))
+    # Suspicious files - check against SUSPICIOUS_EXTENSIONS
+    suspicious_files = []
+    for file_match in FILE_PATTERN.findall(text):
+        ext = '.' + file_match.split('.')[-1].lower()
+        if ext in SUSPICIOUS_EXTENSIONS:
+            suspicious_files.append(file_match)
+    suspicious_files = list(set(suspicious_files))
     
     return {
         "ip": ips,
