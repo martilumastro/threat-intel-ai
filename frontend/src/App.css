@@ -1,38 +1,202 @@
-.App {
-  text-align: center;
+/*
+   GLOBAL STYLES - App.css
+   (shared across ALL pages)
+
+   Design tokens: fixed spacing scale with 8px increments, refined
+   navy/cyan palette, and ready-to-use severity variables for
+   Reports/Dashboards (CRITICAL/HIGH/MEDIUM/LOW), ensuring the same
+   color semantics apply to all future pages.
+*/
+
+:root {
+  /* Color */
+  --bg: #0a0e14;
+  --surface: #10151f;
+  --surface-hover: #141b28;
+  --border: #1e2733;
+  --border-hover: #2b3646;
+
+  --text-primary: #e7ecf3;
+  --text-secondary: #8b97a8;
+  --text-muted: #566072;
+
+  --accent: #22d3c5;
+  --accent-strong: #0ea89a;
+  --accent-bg: rgba(34, 211, 197, 0.08);
+  --accent-bg-hover: rgba(34, 211, 197, 0.14);
+
+  /* Severity - ready for Reports/Dashboard */
+  --severity-critical: #f0466b;
+  --severity-high: #f0a34e;
+  --severity-medium: #e8d354;
+  --severity-low: #5a9e6f;
+
+  /* Spacing: fixed 8px scale */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+  --space-8: 64px;
+
+  /* Rays and shadows */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.4);
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+a {
+  color: inherit;
+}
+
+/* NAVBAR */
+
+.navbar {
+  background: rgba(10, 14, 20, 0.85);
+  border-bottom: 1px solid var(--border);
+  padding: var(--space-2) var(--space-6);
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
 }
 
-.App-link {
-  color: #61dafb;
+.nav-brand {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.nav-links {
+  display: flex;
+  gap: var(--space-4);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nav-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+  padding: var(--space-1) 0;
+  position: relative;
+}
+
+.nav-links a:hover {
+  color: var(--text-primary);
+}
+
+.nav-links a.active {
+  color: var(--accent);
+}
+
+.nav-links a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -17px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+/* BASE PAGE */
+
+.page-content {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-8);
+}
+
+h1 {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 15px;
+  margin-bottom: var(--space-6);
+}
+
+/* GLOBAL LOADING */
+
+.loading {
+  text-align: center;
+  padding: var(--space-8) 0;
+  color: var(--text-muted);
+  font-size: 15px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* GLOBAL RESPONSIVE */
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: var(--space-2) var(--space-2);
+    flex-wrap: wrap;
+    gap: var(--space-1);
   }
-  to {
-    transform: rotate(360deg);
+
+  .nav-links {
+    gap: var(--space-2);
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+
+  .page-content {
+    padding: var(--space-4) var(--space-2) var(--space-6);
+  }
+
+  h1 {
+    font-size: 21px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    margin-bottom: var(--space-4);
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-brand {
+    font-size: 13px;
+  }
+
+  .nav-links {
+    gap: var(--space-1);
+    font-size: 12px;
+  }
+
+  h1 {
+    font-size: 19px;
   }
 }

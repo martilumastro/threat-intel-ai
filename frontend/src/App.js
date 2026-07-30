@@ -1,25 +1,37 @@
-import logo from './logo.svg';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 
-function App() {
+import SourcesPage from './pages/SourcesPage';
+// import ReportsPage from './pages/ReportsPage';
+// import KnowledgePage from './pages/KnowledgePage';
+// import DashboardPage from './pages/DashboardPage';
+
+const App = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+      <div className="app">
+        {/* Navbar */}
+        <nav className="navbar">
+          <div className="nav-brand">THREAT INTEL</div>
+          <div className="nav-links">
+            <Link to="/" className="active">Sources</Link>
+            <Link to="/reports">Reports</Link>
+            <Link to="/knowledge">Knowledge</Link>
+            <Link to="/dashboard">Dashboard</Link>
+          </div>
+        </nav>
+
+        {/* Page content */}
+        <Routes>
+          <Route path="/" element={<SourcesPage />} />
+          <Route path="/reports" element={<div>Reports Page</div>} />
+          <Route path="/knowledge" element={<div>Knowledge Page</div>} />
+          <Route path="/dashboard" element={<div>Dashboard Page</div>} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   );
-}
+};
 
 export default App;

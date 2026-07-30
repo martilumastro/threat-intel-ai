@@ -1,8 +1,30 @@
 from django.db import models
 
 # Create your models here.
-"""Django models mirroring the threat_intel.db schema."""
+"""Django models mirroring the threat_intel.db schema.
 
+models.py: the representation of the database in Python code
+
+The models.py file is what the programmer writes and modifies. This is where you define the Python classes that represent the database tables.
+For example:
+    class Actor(models.Model):
+        canonical_name = models.CharField(max_length=200, unique=True)
+
+This does not directly create a table in the database; 
+instead, it defines a Python model that Django uses through the ORM (Object-Relational Mapper).
+
+Thanks to the ORM, you can work with objects instead of writing SQL queries. 
+For example:
+    actor = Actor.objects.create(canonical_name="APT29")
+
+Django automatically translates this instruction into an SQL query similar to:
+    INSERT INTO actor (canonical_name) VALUES ('APT29');
+
+models.py describes the data model that the Python code will use daily via the ORM. 
+It serves the backend to interact with the database through the ORM.
+
+0001_initial.py, on the other hand, is used only when it is necessary to create or modify the database structure. 
+Once the migration has been applied, the file remains as a historical record of the changes made to the database."""
 
 
 class Actor(models.Model):
