@@ -30,16 +30,16 @@ from .views import (
     FalsePositiveViewSet,
     IOCExampleViewSet,
     TTPViewSet,
-    # The last are function-based views, which are simpler and handle specific tasks
-    # Are simple functions: list_sources and search_sources. They implement custom functionalities
-    # Source page function-based views
-    list_sources,
-    search_sources,
     # Reports page function-based views
     download_final_report,
     explain_entity,
     get_final_report,
     list_extracted_reports,
+    # The last are function-based views, which are simpler and handle specific tasks
+    # Are simple functions: list_sources and search_sources. They implement custom functionalities
+    # Source page function-based views
+    list_sources,
+    search_sources,
 )
 
 # Creates a router, which is a component that automatically generates the URLs for the ViewSets

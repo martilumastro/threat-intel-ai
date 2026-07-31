@@ -13,19 +13,25 @@ this file also implements two custom endpoints that read a configuration file (s
 
 # json is used to read and write files in JSON format
 import json
+
 # Path allows you to manage file paths easily and independently of the operating system
 from pathlib import Path
+
 # Imports the feedparser library. This library allows you to automatically read an RSS feed
 import feedparser
+
 # HttpResponse is used to serve raw file content (JSON/Markdown) as a
 # downloadable file, instead of a DRF Response (which always wraps
 # the content in the API's standard JSON format)
 from django.http import HttpResponse
+
 # Imports the ViewSets from Django REST Framework. A ModelViewSet automatically implements all CRUD operations: Create, Read, Update, Delete, without having to write each function manually
 from rest_framework import viewsets
+
 # Imports the @api_view decorator. It is used to transform a regular Python function into a REST endpoint
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
 # # Imports all the database models. They will be used by the ViewSets to retrieve data
 from .models import (
     TTP,
