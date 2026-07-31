@@ -313,16 +313,6 @@
     border: 1px solid transparent;
 }
 
-.btn-outline {
-    background: transparent;
-    color: var(--text-secondary);
-    border-color: var(--border);
-}
-
-.btn-outline:hover {
-    border-color: var(--border-hover);
-    color: var(--text-primary);
-}
 
 .btn-primary-sm {
     background: var(--accent);

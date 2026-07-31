@@ -32,8 +32,14 @@ from .views import (
     TTPViewSet,
     # The last are function-based views, which are simpler and handle specific tasks
     # Are simple functions: list_sources and search_sources. They implement custom functionalities
+    # Source page function-based views
     list_sources,
     search_sources,
+    # Reports page function-based views
+    download_final_report,
+    explain_entity,
+    get_final_report,
+    list_extracted_reports,
 )
 
 # Creates a router, which is a component that automatically generates the URLs for the ViewSets
@@ -64,4 +70,10 @@ urlpatterns = [
     # Defines a custom endpoint
     # Defines the path for the list_sources function, which will be accessible at /sources/list
     path("sources/list", list_sources, name="list_sources"),
+    # Reports page: Step 1 results per document, the final correlated
+    # report, its file download, and the entity explanation lookup
+    path("reports/extracted", list_extracted_reports, name="list_extracted_reports"),
+    path("reports/final", get_final_report, name="get_final_report"),
+    path("reports/final/download", download_final_report, name="download_final_report"),
+    path("explain", explain_entity, name="explain_entity"),
 ]

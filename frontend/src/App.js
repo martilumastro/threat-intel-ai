@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 
 import SourcesPage from './pages/SourcesPage';
-// import ReportsPage from './pages/ReportsPage';
+import ReportsPage from './pages/ReportsPage';
 // import KnowledgePage from './pages/KnowledgePage';
 // import DashboardPage from './pages/DashboardPage';
 
@@ -25,7 +25,7 @@ const App = () => {
         {/* Page content */}
         <Routes>
           <Route path="/" element={<SourcesPage />} />
-          <Route path="/reports" element={<div>Reports Page</div>} />
+          <Route path="/reports" element={<ReportsPage />} />
           <Route path="/knowledge" element={<div>Knowledge Page</div>} />
           <Route path="/dashboard" element={<div>Dashboard Page</div>} />
         </Routes>
